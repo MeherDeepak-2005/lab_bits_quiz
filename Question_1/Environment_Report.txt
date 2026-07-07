@@ -1,0 +1,112 @@
+================================================================
+ QUESTION 1 - LINUX ENVIRONMENT VERIFICATION REPORT
+ Prepared by: Linux Support Engineer
+ Date: 03 July 2026
+================================================================
+
+PURPOSE
+-------
+Verify the Linux user account and environment before accessing
+company resources.
+
+----------------------------------------------------------------
+1. USERNAME AND GROUPS
+----------------------------------------------------------------
+Commands used:
+    $ whoami
+    $ id
+    $ groups
+
+Output:
+    whoami  -> root
+    id      -> uid=0(root) gid=0(root) groups=0(root)
+    groups  -> root
+
+Observations:
+  * whoami returns the effective login name of the account.
+  * id shows the numeric UID (0) and GID (0). UID 0 identifies
+    the superuser (root), which has unrestricted privileges.
+  * groups lists every group the account belongs to; here the
+    only group is 'root'. Group membership controls shared file
+    access across the system.
+
+----------------------------------------------------------------
+2. CURRENT SHELL
+----------------------------------------------------------------
+Commands used:
+    $ echo $SHELL
+    $ ps -p $$ -o comm=
+    $ bash --version
+
+Output:
+    Active interpreter: sh
+    Login shell path  : /bin/sh
+    Bash available    : GNU bash, version 5.2.21(1)-release
+
+Observations:
+  * $SHELL holds the user's default login shell.
+  * ps -p $$ prints the shell actually executing the session.
+  * The shell interprets commands and manages job control,
+    environment variables and I/O. bash 5.2 is installed and
+    can be started explicitly for advanced features (brace
+    expansion, arrays, etc.).
+
+----------------------------------------------------------------
+3. CURRENT WORKING DIRECTORY
+----------------------------------------------------------------
+Command used:
+    $ pwd
+
+Output:
+    /
+
+Observations:
+  * pwd (print working directory) shows the absolute path of
+    the location the shell is currently operating in.
+  * All relative paths are resolved from this directory.
+  * A working project should be created under a user workspace
+    such as /home/<user>/workspace rather than at '/'.
+
+----------------------------------------------------------------
+4. FILES AND DIRECTORIES IN WORKSPACE
+----------------------------------------------------------------
+Command used:
+    $ ls -la
+
+Sample workspace output (/home/claude/workspace):
+    drwxr-xr-x  docs/
+    -rw-r--r--  readme.txt
+    -rw-r--r--  notes.md
+
+Observations:
+  * ls -la shows all entries including hidden dot-files, along
+    with permissions, owner, group, size and modification time.
+  * The leading character ('d' vs '-') distinguishes directories
+    from regular files.
+  * The permission block (rwxr-xr-x) shows access for owner,
+    group and others respectively.
+
+----------------------------------------------------------------
+5. NETWORK CONNECTIVITY VERIFICATION
+----------------------------------------------------------------
+Commands used (ping was not installed, alternatives used):
+    $ ping -c 3 8.8.8.8          # (not available in this host)
+    $ curl -sSI https://github.com
+    $ getent hosts github.com
+
+Output:
+    curl        -> HTTP/2 200         (successful web response)
+    getent hosts-> 140.82.112.3 github.com   (DNS resolves)
+
+Observations:
+  * ping is the standard reachability test (ICMP echo); when it
+    is unavailable, curl and getent confirm connectivity.
+  * The HTTP/2 200 response proves outbound network + DNS work.
+  * getent hosts confirms name resolution is functioning.
+  * Result: NETWORK CONNECTIVITY VERIFIED.
+
+================================================================
+ SUMMARY: Account is root (UID 0), shell is sh (bash 5.2 also
+ present), working directory verified, workspace listed, and
+ external network connectivity confirmed. Environment is ready.
+================================================================

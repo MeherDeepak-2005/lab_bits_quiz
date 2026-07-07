@@ -1,0 +1,36 @@
+QUESTION 1 - BRIEF OBSERVATIONS (per command)
+
+whoami
+  - Prints the effective username of the logged-in account.
+  - Confirms which identity is being used to access resources.
+  - Simplest way to verify you are on the correct account.
+
+id
+  - Shows the numeric UID and GID plus all group memberships.
+  - UID 0 = superuser (root); a normal user has a non-zero UID.
+  - Group IDs determine shared file access across the system.
+
+groups
+  - Lists every group the current user belongs to.
+  - Group membership controls access to shared project files.
+  - Useful for confirming team/permission grouping.
+
+echo $SHELL
+  - Displays the path of the default login shell (e.g. /bin/bash).
+  - The shell interprets commands and manages the session.
+  - Confirms which command interpreter is active.
+
+pwd
+  - Prints the absolute path of the current working directory.
+  - All relative paths are resolved from this location.
+  - Confirms where new files will be created.
+
+ls -la
+  - Lists all files/dirs including hidden ones, with details.
+  - Shows permissions, owner, group, size and timestamps.
+  - 'd' marks directories; '-' marks regular files.
+
+ping -c 3 8.8.8.8
+  - Sends 3 ICMP packets to test network reachability.
+  - Replies received = network connectivity is working.
+  - 0% packet loss confirms a healthy connection.
