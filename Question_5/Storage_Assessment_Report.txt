@@ -1,0 +1,125 @@
+================================================================
+ QUESTION 5 - STORAGE HEALTH ASSESSMENT REPORT
+ (Document authored using the vi editor)
+ Date: 03 July 2026
+================================================================
+
+NOTE ON vi USAGE
+----------------
+This file was created and edited with vi:
+    $ vi Storage_Assessment_Report.txt
+    i           -> enter INSERT mode to type content
+    <Esc>       -> return to COMMAND mode
+    :w          -> write (save) the file
+    dd          -> delete a line ; yy / p -> copy / paste a line
+    :set number -> show line numbers while editing
+    /df         -> search for the text "df"
+    :wq         -> save and quit   (or :x)
+
+----------------------------------------------------------------
+1. AVAILABLE STORAGE DEVICES
+----------------------------------------------------------------
+Command used:
+    $ lsblk
+
+Output:
+    NAME  MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+    vda   254:0    0  256G  0 disk /
+    vdb   254:16   0  9.7M  1 disk /opt/rclone
+    vdc   254:32   0  668K  1 disk /mnt/skills/public
+    vdd   254:48   0  5.4M  1 disk /mnt/skills/examples
+
+Observations:
+  * vda is the main 256 GB virtual disk holding the root ('/')
+    filesystem. RM=0 (not removable), RO=0 (read-write).
+  * vdb/vdc/vdd are small read-only (RO=1) squashfs images used
+    for tooling/skills.
+
+----------------------------------------------------------------
+2. MOUNTED FILE SYSTEMS
+----------------------------------------------------------------
+Command used:
+    $ mount | grep '^/dev'
+
+Output:
+    /dev/vda on /               type ext4     (rw,relatime)
+    /dev/vdb on /opt/rclone     type squashfs (ro)
+    /dev/vdc on /mnt/skills/public   type squashfs (ro)
+    /dev/vdd on /mnt/skills/examples type squashfs (ro)
+
+Observations:
+  * Root filesystem is ext4 mounted read-write.
+  * squashfs mounts are compressed and read-only - safe, cannot
+    be modified at runtime.
+
+----------------------------------------------------------------
+3. DISK USAGE STATISTICS
+----------------------------------------------------------------
+Commands used:
+    $ df -h
+    $ du -sh /home/claude/*
+
+Output (df -h, key rows):
+    Filesystem   Size  Used Avail Use%  Mounted on
+    /dev/vda     252G  8.6G   10G  47%  /
+    tmpfs        2.0G     0  2.0G   0%  /dev/shm
+
+Output (du -sh, sample):
+    16K  project_workspace
+    16K  workspace
+    8.0K link_lab
+
+Observations:
+  * The root filesystem reports 47% usage. NOTE: although the
+    disk is 252 G, only ~10 G is currently shown as available,
+    so the effective usable partition is smaller than the raw
+    device - worth monitoring.
+  * df shows filesystem-level usage; du shows per-directory
+    usage, useful for finding what is consuming space.
+
+----------------------------------------------------------------
+4. INODE UTILISATION
+----------------------------------------------------------------
+Command used:
+    $ df -i
+
+Output (key row):
+    Filesystem   Inodes    IUsed    IFree  IUse% Mounted on
+    /dev/vda   16777216   193999 16583217    2%  /
+
+Observations:
+  * Only 2% of inodes are used, so there is no risk of running
+    out of inodes.
+  * A filesystem can fill up in TWO ways: out of blocks (space)
+    OR out of inodes (too many tiny files). Both must be checked;
+    df -h alone is not enough.
+
+----------------------------------------------------------------
+5. STORAGE HEALTH OBSERVATIONS
+----------------------------------------------------------------
+  * Space usage at 47% and inode usage at 2% - both healthy.
+  * No removable or failing devices detected.
+  * Read-only squashfs mounts reduce accidental-corruption risk.
+  * Available space on '/' (~10 G) is the main item to watch for
+    a growing application server with logs and data.
+
+----------------------------------------------------------------
+6. RECOMMENDATIONS FOR IMPROVING STORAGE UTILISATION
+----------------------------------------------------------------
+  1. Set up monitoring/alerts on df output (e.g. alert at 80%).
+  2. Put application data and logs on a SEPARATE partition or
+     mounted volume so a log flood cannot fill '/'.
+  3. Implement log rotation (logrotate) to cap log growth.
+  4. Schedule cleanup of temp files and old artefacts (cron).
+  5. Consider LVM so the volume can be extended online if the
+     application grows.
+  6. Track inode usage on filesystems that store many small
+     files, not just block space.
+
+================================================================
+ SUMMARY: The server has a 256 G ext4 root disk at 47% space and
+ 2% inode usage - healthy overall. Read-only tool mounts are safe.
+ Main action items: monitor free space on '/', isolate app data/
+ logs on a separate volume, and enable log rotation before
+ deploying the new application server.
+================================================================

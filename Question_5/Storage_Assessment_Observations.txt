@@ -1,0 +1,26 @@
+QUESTION 5 - BRIEF OBSERVATIONS (per command)
+
+lsblk
+  - Lists block storage devices and their mount points.
+  - Shows device name, size and whether read-only/removable.
+  - Identifies the main disk holding the root filesystem.
+
+mount | grep '^/dev'
+  - Shows which devices are mounted and their filesystem type.
+  - Confirms root is ext4 and mounted read-write.
+  - Read-only mounts cannot be modified at runtime.
+
+df -h
+  - Reports filesystem size, used and available space.
+  - '-h' gives human-readable units (G, M).
+  - Use% highlights how full each filesystem is.
+
+df -i
+  - Reports inode usage instead of block/space usage.
+  - A filesystem can run out of inodes even with free space.
+  - Low IUse% means plenty of inodes remain.
+
+vi Storage_Assessment_Report.txt
+  - Opens the report file in the vi editor.
+  - 'i' inserts text, Esc exits insert mode.
+  - ':wq' saves and quits the file.
