@@ -1,0 +1,119 @@
+================================================================
+ QUESTION 4 - FILE ACCESS AND I/O INVESTIGATION REPORT
+ Date: 03 July 2026
+================================================================
+
+PURPOSE
+-------
+Investigate file access, file descriptors, output/error
+redirection and resource limits while diagnosing an application
+that is experiencing logging issues.
+
+----------------------------------------------------------------
+1. OPEN FILES IDENTIFIED
+----------------------------------------------------------------
+Preferred command:  $ lsof            (was NOT installed here)
+Alternative used :  $ ls -l /proc/self/fd
+                    $ ls -l /proc/<PID>/fd
+
+Output (/proc/self/fd):
+    0 -> pipe:[1198]
+    1 -> pipe:[1199]
+    2 -> pipe:[1200]
+    3 -> /proc/595/fd
+
+Observations:
+  * Every open file (or pipe/socket) a process holds appears
+    under /proc/<PID>/fd as a numbered symbolic link.
+  * lsof is the usual tool; when absent, /proc gives the same
+    information. For a logging bug you would check whether the
+    app's log file appears here and whether it is opened
+    read-only or write.
+
+----------------------------------------------------------------
+2. FILE DESCRIPTOR OBSERVATIONS
+----------------------------------------------------------------
+Standard descriptors every process starts with:
+    0 = STDIN   (standard input)
+    1 = STDOUT  (standard output)
+    2 = STDERR  (standard error)
+
+Demonstration - opening a custom descriptor (fd 7):
+    $ exec 7> /home/claude/demo_fd.log
+    $ ls -l /proc/$$/fd/7
+        l-wx------  7 -> /home/claude/demo_fd.log
+    $ echo "line via fd7" >&7
+    $ exec 7>&-          # close fd 7
+    $ cat demo_fd.log -> line via fd7
+
+Observations:
+  * A file descriptor is a small integer index into the kernel's
+    per-process open-file table.
+  * fd 7 was manually opened for WRITE (l-wx), written to, then
+    closed - exactly how a program manages its own log handle.
+  * A common logging bug is opening the log with the wrong mode,
+    or leaking descriptors until the limit (see section 4) is hit.
+
+----------------------------------------------------------------
+3. OUTPUT AND ERROR REDIRECTION
+----------------------------------------------------------------
+Commands used:
+    $ echo "this goes to a file" > out.log            # STDOUT (1>)
+    $ ls /nonexistent_path 2> err.log                 # STDERR (2>)
+    $ ls /nonexistent_path > combined.log 2>&1        # both merged
+
+Output:
+    out.log      -> this goes to a file
+    err.log      -> ls: cannot access '/nonexistent_path':
+                    No such file or directory
+    combined.log -> (same error text; STDOUT+STDERR merged)
+
+Observations:
+  * '>' truncates/creates and redirects STDOUT (fd 1).
+  * '2>' redirects STDERR (fd 2) - errors are a SEPARATE stream.
+  * '2>&1' points fd 2 to wherever fd 1 currently goes, merging
+    both into one file. Order matters: '> file 2>&1'.
+  * Use '>>' to append instead of overwrite - important so logs
+    are not wiped on each run (a frequent cause of "missing logs").
+
+----------------------------------------------------------------
+4. RESOURCE LIMITS OBSERVED
+----------------------------------------------------------------
+Command used:
+    $ ulimit -a
+    $ ulimit -n
+
+Selected output:
+    open files            (-n)  1024
+    max user processes    (-u)  15955
+    stack size    (kbytes, -s)  8192
+    core file size(blocks, -c)  0
+    file size     (blocks, -f)  unlimited
+
+Observations:
+  * 'open files = 1024' caps how many descriptors ONE process may
+    hold. An app that never closes log handles can exhaust this
+    and fail with "Too many open files" (EMFILE) - a classic
+    logging failure. Raise with 'ulimit -n <N>' or limits.conf.
+  * core file size 0 means no core dumps are written on crash.
+
+----------------------------------------------------------------
+5. HOW LINUX MANAGES FILE I/O
+----------------------------------------------------------------
+  * Opening a file returns a file descriptor; the kernel keeps a
+    per-process fd table pointing into a system-wide open-file
+    table, which in turn references the inode.
+  * Reads/writes go through kernel buffers (the page cache), so
+    data may be buffered before hitting disk; fsync() forces it.
+  * The three standard streams (0/1/2) are inherited by every
+    child process, which is what makes shell redirection and
+    piping possible.
+  * Per-process limits (ulimit) protect the system from runaway
+    resource use.
+
+================================================================
+ SUMMARY: Open files were inspected via /proc (lsof unavailable),
+ the 0/1/2 standard descriptors and a manual fd 7 were demonstrated,
+ STDOUT vs STDERR redirection was shown, and the 1024 open-file
+ limit was identified as a likely root cause of logging failures.
+================================================================

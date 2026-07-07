@@ -1,0 +1,30 @@
+QUESTION 4 - BRIEF OBSERVATIONS (per command)
+
+ls -l /proc/self/fd
+  - Lists the open file descriptors of the current process.
+  - 0,1,2 are stdin, stdout, stderr respectively.
+  - Each fd is a link to the file/pipe it points to.
+
+echo "hello" > out.log
+  - '>' redirects standard output (fd 1) into a file.
+  - Creates/overwrites out.log with the text.
+  - Demonstrates output redirection.
+
+ls /nonexistent 2> err.log
+  - '2>' redirects standard error (fd 2) into a file.
+  - The error message goes to err.log, not the screen.
+  - Shows stderr is a separate stream from stdout.
+
+cat err.log
+  - Displays the captured error message.
+  - Confirms error redirection worked.
+
+ls /nonexistent > combined.log 2>&1
+  - Sends both stdout and stderr to one file.
+  - '2>&1' points fd 2 to the same place as fd 1.
+  - Useful for capturing complete command logs.
+
+ulimit -a
+  - Shows per-process resource limits.
+  - 'open files' (default 1024) caps descriptors per process.
+  - Exhausting it causes 'Too many open files' logging errors.
