@@ -1,0 +1,37 @@
+QUESTION 3 - BRIEF OBSERVATIONS (per command)
+
+echo "Original content" > original.txt
+  - Creates the source file with some content.
+  - This is the file both links will point to.
+
+ln original.txt hardlink.txt
+  - Creates a HARD link sharing the same inode/data.
+  - The inode link count increases from 1 to 2.
+  - Both names refer to identical data blocks.
+
+ln -s original.txt symlink.txt
+  - Creates a SYMBOLIC link storing the target's path.
+  - It has its own inode and only holds a pointer.
+  - Can cross filesystems and point to directories.
+
+ls -li
+  - Shows inode numbers alongside file details.
+  - original and hardlink share the SAME inode.
+  - symlink has a DIFFERENT inode and 'l' file type.
+
+stat original.txt
+  - Displays inode number, link count and metadata.
+  - Link count of 2 confirms the hard link relationship.
+
+rm original.txt
+  - Removes only ONE directory entry (name).
+  - Data survives because the hard link still references it.
+  - Link count drops back from 2 to 1.
+
+cat hardlink.txt
+  - Still prints the original content - data intact.
+  - Proves hard links keep data alive after deletion.
+
+cat symlink.txt
+  - Fails: target path no longer exists (broken link).
+  - Shows a symlink is only a pointer, not the data.

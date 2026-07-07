@@ -1,0 +1,114 @@
+================================================================
+ QUESTION 3 - FILE SYSTEM AND LINK ANALYSIS REPORT
+ Date: 03 July 2026
+================================================================
+
+PURPOSE
+-------
+Understand how Linux links work by creating a file, a hard link
+and a symbolic link, then observing their behaviour when the
+original file is deleted.
+
+----------------------------------------------------------------
+1. SETUP
+----------------------------------------------------------------
+Commands used:
+    $ echo "Original content line 1" >  original.txt
+    $ echo "Original content line 2" >> original.txt
+    $ ln    original.txt hardlink.txt      # hard link
+    $ ln -s original.txt symlink.txt       # symbolic link
+
+----------------------------------------------------------------
+2. INODE NUMBERS OF ALL FILES
+----------------------------------------------------------------
+Command used:
+    $ ls -li
+
+Output (before deletion):
+   573473 -rw-r--r-- 2 root root 48  hardlink.txt
+   573473 -rw-r--r-- 2 root root 48  original.txt
+   573474 lrwxrwxrwx 1 root root 12  symlink.txt -> original.txt
+
+Key facts:
+  * original.txt and hardlink.txt share the SAME inode 573473.
+  * The link count for that inode is 2 (two names, one inode).
+  * symlink.txt has a DIFFERENT inode 573474 and its own tiny
+    size (12 bytes = the length of the path it stores).
+
+----------------------------------------------------------------
+3. METADATA COLLECTED (stat)
+----------------------------------------------------------------
+Command used:
+    $ stat original.txt
+    $ stat symlink.txt
+
+Output highlights:
+    original.txt : Inode 573473   Links: 2   type = regular file
+    symlink.txt  : Inode 573474   Links: 1   type = symbolic link
+                   File: symlink.txt -> original.txt
+
+----------------------------------------------------------------
+4. HARD LINK vs SYMBOLIC LINK
+----------------------------------------------------------------
+  HARD LINK (ln):
+    - Second name pointing to the SAME inode/data blocks.
+    - Shares inode number; increases the inode link count.
+    - Cannot cross filesystems; cannot link directories.
+    - Data survives as long as at least one hard link remains.
+
+  SYMBOLIC LINK (ln -s):
+    - A separate small file whose content is a PATH string.
+    - Has its own inode; link count of target is unchanged.
+    - Can cross filesystems and can point to directories.
+    - Becomes a "dangling"/broken link if the target is removed.
+
+----------------------------------------------------------------
+5. EFFECT OF DELETING THE ORIGINAL FILE
+----------------------------------------------------------------
+Command used:
+    $ rm original.txt
+    $ ls -li
+    $ cat hardlink.txt
+    $ cat symlink.txt
+    $ readlink symlink.txt
+
+Output after deletion:
+   573473 -rw-r--r-- 1 root root 48  hardlink.txt   <-- Links now 1
+   573474 lrwxrwxrwx 1 root root 12  symlink.txt -> original.txt
+
+   cat hardlink.txt ->
+       Original content line 1
+       Original content line 2          (DATA INTACT)
+
+   cat symlink.txt  ->
+       cat: symlink.txt: No such file or directory   (BROKEN)
+
+   readlink symlink.txt -> original.txt  (still points to a name
+                                          that no longer exists)
+
+Observation:
+  * Deleting original.txt only removed ONE directory entry. The
+    inode 573473 and its data remained because hardlink.txt still
+    referenced it - the link count simply dropped from 2 to 1.
+  * The symbolic link still stores the text "original.txt"; since
+    that path is gone, the link is now dangling and unreadable.
+
+----------------------------------------------------------------
+6. CONCLUSIONS
+----------------------------------------------------------------
+  * Data is freed only when the inode link count reaches 0 AND no
+    process holds the file open. Hard links therefore provide a
+    form of protection against accidental deletion.
+  * A symbolic link is only a pointer to a path; it breaks the
+    moment the target disappears, even though the link file still
+    exists.
+  * For recovering/preserving a file, a hard link is safer; for
+    flexible cross-filesystem or directory references, a symbolic
+    link is the right tool.
+
+================================================================
+ SUMMARY: original + hard link shared inode 573473 (link count 2);
+ the symlink had inode 573474. Deleting the original left the hard
+ link fully functional (count -> 1, data intact) while the symlink
+ became broken. This demonstrates inode-based reference counting.
+================================================================
