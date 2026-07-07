@@ -1,0 +1,109 @@
+================================================================
+ QUESTION 2 - SECURE PROJECT WORKSPACE SETUP REPORT
+ Date: 03 July 2026
+================================================================
+
+PURPOSE
+-------
+Create a secure workspace for project files and documentation and
+configure permissions so only authorised users can access data.
+
+----------------------------------------------------------------
+1. DIRECTORY STRUCTURE CREATED
+----------------------------------------------------------------
+Commands used:
+    $ mkdir -p project_workspace/docs \
+               project_workspace/src \
+               project_workspace/config
+    $ touch docs/design.txt src/main.py config/settings.conf
+
+Structure:
+    project_workspace/
+    |-- docs/     design.txt          (documentation)
+    |-- src/      main.py             (source code)
+    |-- config/   settings.conf       (sensitive config/secrets)
+
+----------------------------------------------------------------
+2. UMASK VALUE
+----------------------------------------------------------------
+Command used:
+    $ umask
+
+Output:
+    0022
+
+Explanation:
+  * umask defines the permission bits REMOVED from the default
+    when new files/directories are created.
+  * Default dir base 777 - 022 = 755 ; file base 666 - 022 = 644.
+  * That is why the newly created items started as 755 / 644.
+  * For a stricter default, 'umask 027' would give 750 / 640.
+
+----------------------------------------------------------------
+3. FILE PERMISSIONS BEFORE MODIFICATION
+----------------------------------------------------------------
+Command used:
+    $ ls -la ; stat -c '%A %U:%G %n' docs/design.txt config/settings.conf
+
+Output (defaults from umask 022):
+    drwxr-xr-x  config/
+    drwxr-xr-x  docs/
+    drwxr-xr-x  src/
+    -rw-r--r--  docs/design.txt
+    -rw-r--r--  config/settings.conf
+
+Observation: default permissions allow ANY user ("others") to
+read the files and enter the directories - too permissive for a
+secure project.
+
+----------------------------------------------------------------
+4. PERMISSIONS AFTER MODIFICATION
+----------------------------------------------------------------
+Commands used:
+    $ chmod 750 . docs src config        # dirs: owner rwx, group rx
+    $ chmod 640 docs/design.txt src/main.py   # files: owner rw, group r
+    $ chmod 600 config/settings.conf     # secrets: owner only
+
+Output:
+    drwxr-x---  .            (750)
+    drwxr-x---  config/      (750)
+    drwxr-x---  docs/        (750)
+    drwxr-x---  src/         (750)
+    -rw-r-----  docs/design.txt        (640)
+    -rw-r-----  src/main.py            (640)
+    -rw-------  config/settings.conf   (600)
+
+----------------------------------------------------------------
+5. OWNERSHIP DETAILS
+----------------------------------------------------------------
+Command used:
+    $ ls -ln          (numeric)   /   $ ls -l   (names)
+
+Output:
+    owner = root (UID 0)   group = root (GID 0)
+
+  * Ownership can be reassigned to a project team account/group:
+        $ chown -R projuser:projteam project_workspace
+    so the whole team shares access through the group bit.
+
+----------------------------------------------------------------
+6. HOW PERMISSIONS PROTECT PROJECT DATA
+----------------------------------------------------------------
+  * 750 on directories: owner can list/enter/modify, group can
+    list/enter (read + traverse) but NOT modify structure, and
+    "others" are completely blocked - they cannot even list.
+  * 640 on files: owner reads/writes, team members (group) read
+    only, outsiders get nothing. Protects docs and source from
+    unauthorised edits or leaks.
+  * 600 on settings.conf: only the owner can read/write the file.
+    Secrets such as passwords or API keys are hidden even from
+    other team members. This enforces least-privilege.
+  * Combined with a proper umask (027), NEW files inherit safe
+    permissions automatically, reducing human error.
+
+================================================================
+ SUMMARY: A three-folder workspace was created, inspected under
+ the default umask 022 (755/644), then hardened to 750 dirs,
+ 640 shared files and 600 secrets. This layered scheme enforces
+ owner/group/other separation and protects project data.
+================================================================

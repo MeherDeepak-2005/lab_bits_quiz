@@ -1,0 +1,29 @@
+QUESTION 2 - BRIEF OBSERVATIONS (per command)
+
+mkdir -p project_workspace/docs src config
+  - Creates the workspace and its sub-folders in one step.
+  - '-p' makes parent directories as needed without errors.
+  - Organises files into docs, source and config areas.
+
+touch docs/design.txt src/main.py config/settings.conf
+  - Creates empty placeholder files in each folder.
+  - Gives files to apply and observe permissions on.
+
+umask
+  - Shows the mask that removes bits from default permissions.
+  - Value 0022 -> new dirs 755, new files 644.
+  - Explains why files start group/other readable.
+
+ls -la  (before chmod)
+  - Shows default permissions granted at creation time.
+  - Others can read files - too open for a secure workspace.
+
+chmod 750 / 640 / 600
+  - 750 dirs: owner full, group enter/read, others none.
+  - 640 files: owner read/write, group read, others none.
+  - 600 secrets: only the owner can read/write the file.
+
+ls -la  (after chmod)
+  - Confirms the hardened permissions were applied.
+  - Compare with the 'before' output to show the change.
+  - Owner/group/other separation now enforces least privilege.
